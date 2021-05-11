@@ -312,7 +312,7 @@ def compute_fourier_coefficient_covariance_for_FOCUS(n_coils,n_modes,perturbatio
 
   if drop_pickle:
     # drop the pickle file
-    outfilename = f"fourier_coefficient_covariances_{n_coils}_coils_{n_modes}_modes.pickle"
+    outfilename = f"fourier_coefficient_covariances_{n_coils}_coils_{n_modes-1}_modes_{perturbation_size}_p_{l}_l.pickle"
     outdata                     = {}
     outdata['single_coil_fourier_coeffs']   = F
     outdata['all_coils_fourier_coeffs']     = cov
