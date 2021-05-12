@@ -125,16 +125,17 @@ if __name__ == '__main__':
   x0  = 10*np.random.randn(dim)
   # function
   f      = lambda x: x @ x
-  # gradient
-  grad   = lambda x: 2*x 
   # hessian
   H      = 2.0*np.eye(dim)
   # covariance
   C   = 2.0*np.eye(dim)
-  # risk function
+  Q   = np.linalg.cholesky(C)
+  def stoch_grad(x):
+    y = x +  Q @ np.random.randn(dim)
+    return 2*y  # risk function
   rn      = lambda x: x @ x + 0.5*np.trace(H @ C)
   # optimize
-  x_best,X = adam(grad, x0,C,max_iter=1000,batch_size=5,eta=0.1,gamma=1.0,beta1=0.9,beta2=0.9,eps=1e-4,func=f,verbose=True)
+  x_best,X = adam(stoch_grad, x0,max_iter=1000,batch_size=5,eta=0.1,gamma=1.0,beta1=0.9,beta2=0.9,eps=1e-4,func=f,verbose=True)
   fX = [f(x) for x in X]
   rnX = [rn(x) for x in X]
   print(x_best)
