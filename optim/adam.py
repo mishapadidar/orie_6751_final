@@ -83,7 +83,7 @@ def adam(grad, x0,max_iter=100,batch_size=1,eta=1.0,gamma=1.0,beta1=0.9,beta2=0.
       sys.stdout.flush()
     
     # compute the gradient
-    g_k = np.mean(np.array([grad(x) for ii in range(batch_size)]),axis=0)
+    g_k = np.mean(np.array([grad(x_k) for ii in range(batch_size)]),axis=0)
 
     # compute moments
     m_k = beta1*m_km1 + (1-beta1)*g_k;
