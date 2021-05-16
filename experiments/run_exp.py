@@ -17,15 +17,18 @@ mpi_nodes                       = 1
 run_params['problem_num']       = 0
 run_params['batch_size']        = 10
 run_params['max_iter']          = 10
-run_params['lr_eta']            = 0.04
-run_params['lr_gamma']          = 0.1
-run_params['beta1']             = 0.95
-run_params['beta2']             = 0.99
-run_params['eps']               = 1e-10
+run_params['mu0']               = 1e-6
+run_params['mu_min']            = 1e-16
+run_params['mu_max']            = 1e6
+run_params['gtol']              = 1e-2
+run_params['c_armijo']          = 0.0
+run_params['target_bnorm']      = 1e-3 # TODO: Look to JF for an appropriate value
+run_params['delta']             = 0.05 
+run_params['alpha_pen']         = 10
 run_params['normal_pertubation_size'] = 0.002
 run_params['gp_lengthscale']    = 0.5
 run_params['max_shift']    = 0.005
-run_params['max_rotation'] = np.pi/8 # @misha figure out how to set this
+run_params['max_rotation'] = np.pi/12 # TODO: figure out how to set this
 run_params['data_dir'] = "./output/" # data save location
 
 # seed and date
