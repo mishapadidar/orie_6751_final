@@ -6,29 +6,29 @@ import numpy as np
 
 # flags
 write_sbatch =True
-submit       =False
+submit       =True
 
 # write a pickle file with the run info
 run_params_dir = "./param_files/"
 if os.path.exists(run_params_dir) is False:
   os.mkdir(run_params_dir)
 run_params = {}
-mpi_nodes                       = 1
+mpi_nodes                       = 3
 run_params['problem_num']       = 0
-run_params['batch_size']        = 10
-run_params['max_iter']          = 10
-run_params['mu0']               = 1e-6
+run_params['batch_size']        = 100
+run_params['max_iter']          = 1000
+run_params['mu0']               = 1e-4
 run_params['mu_min']            = 1e-16
 run_params['mu_max']            = 1e6
 run_params['gtol']              = 1e-2
 run_params['c_armijo']          = 0.0
 run_params['target_bnorm']      = 1e-3 # TODO: Look to JF for an appropriate value
 run_params['delta']             = 0.05 
-run_params['alpha_pen']         = 10
-run_params['normal_pertubation_size'] = 0.002
+run_params['alpha_pen']         = 1e3
+run_params['normal_pertubation_size'] = 0.005
 run_params['gp_lengthscale']    = 0.5
-run_params['max_shift']    = 0.005
-run_params['max_rotation'] = np.pi/12 # TODO: figure out how to set this
+run_params['max_shift']         = 0.005  # TODO: figure out how to set this
+run_params['max_rotation']      = np.pi/8 # TODO: figure out how to set this
 run_params['data_dir'] = "./output/" # data save location
 
 # seed and date
@@ -54,7 +54,7 @@ if write_sbatch:
   #slurm_name = base_name + ".sub"
   f = open(slurm_name,"w")
   f.write(f"#!/bin/bash\n")
-  f.write(f"#SBATCH -J focus_prob_{run_params['problem_num']}\n")
+  f.write(f"#SBATCH -J foc{run_params['problem_num']}\n")
   f.write(f"#SBATCH -o ./slurm_output/job_%j.out\n")
   f.write(f"#SBATCH -e ./slurm_output/job_%j.err\n")
   f.write(f"#SBATCH --get-user-env\n")
@@ -67,7 +67,7 @@ if write_sbatch:
   f.write(f"#SBATCH --ntasks={mpi_nodes}\n")
   f.write(f"#SBATCH --tasks-per-node=1\n")
   f.write(f"#SBATCH --cpus-per-task=1\n")
-  f.write(f"mpiexec -n {mpi_nodes} python {param_filename}\n")
+  f.write(f"mpiexec -n {mpi_nodes} python test.py {param_filename}\n")
   print(f"Dumped slurm file: {slurm_name}")
     
   # write the shell submission script
