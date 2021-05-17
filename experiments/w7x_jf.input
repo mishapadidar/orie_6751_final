@@ -19,16 +19,16 @@
  IsVaryCurrent  =        0              ! 0: all the currents   fixed; 1: currents   can be changed; overwritten by ext.focus
  IsVaryGeometry =        1              ! 0: all the geometries fixed; 1: geometries can be changed; overwritten by ext.focus
  NFcoil         =        2              ! number of Fourier harmonics representing the coils; overwritten by ext.focus
- Nseg           =       32              ! number of coil segments for discretizing; overwritten by ext.focus
+ Nseg           =       128              ! number of coil segments for discretizing; overwritten by ext.focus
 
  IsNormalize    =        0              ! 0: do not normalize coil parameters; 1: normalize; I = I/I0, x = x/R0; I0 & R0 are quadrtic mean values.
- IsNormWeight   =        1              ! 0: do not normalize the weights; 1: normalize the weights
+ IsNormWeight   =        0              ! 0: do not normalize the weights; 1: normalize the weights
  case_bnormal   =        1              ! 0: keep raw Bn error; 1: Bn residue normalized to local |B|
  case_length    =        1              ! 1: quadratic format, converging the target length; 2: exponential format, as short as possible
  case_curv      =        3              ! Thomas Kruger
  k0             =        3.000D+00      ! Thomas Kruger
  curv_alpha     =        2.000D+00      ! Thomas Kruger  
- weight_bnorm   =        1.000D+02      ! weight for real space Bn errors
+ weight_bnorm   =        1.000D+00      ! weight for real space Bn errors
  weight_bharm   =        0.000D+00      ! weight for Bnm harmonic errors
  weight_tflux   =        0.000D+00      ! weight for toroidal flux error
  target_tflux   =        0.000D+00      ! target for the toroidal flux
@@ -38,7 +38,7 @@
  weight_cssep   =        0.000D+00      ! weight for coil-surface separation constraint
  weight_inorm   =        1.000D+00	! weight for normalization of current. Larger weight makes the derivatives more important.
  weight_gnorm   =        1.000D+00	! weight for normalization of geometric coefficients. Larger weight makes the derivatives more important.
- weight_curv    =        1.000D+01      ! Thomas Kruger
+ weight_curv    =        1.000D+00      ! Thomas Kruger
 
  case_optimize  =        1              ! -2: check the 2nd derivatives (not ready); -1: check the 1st derivatives; 0: no optimizations performed; 1: optimizing using the gradient (DF and/or CG); 
  exit_tol       =        1.000D-04      ! Exit the optimizer if the percent change in the cost function over the last 5 steps is below this threshold
