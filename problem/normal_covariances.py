@@ -337,6 +337,14 @@ if __name__ == '__main__':
   import matplotlib.pyplot as plt
   from mpl_toolkits.mplot3d import Axes3D
 
+  # drop fourier coeffs
+  perturbation_size=0.005
+  n_coils = 3
+  n_modes = 2+1
+  lengthscale = 0.5
+  compute_fourier_coefficient_covariance_for_FOCUS(n_coils,n_modes,perturbation_size, lengthscale,drop_pickle=True)
+  quit()
+
   # problem dimension
   dim    = 3
   # desired perturbation size
