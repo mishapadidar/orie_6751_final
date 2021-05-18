@@ -22,14 +22,19 @@ run_params['mu_min']            = 1e-16
 run_params['mu_max']            = 1e6
 run_params['gtol']              = 1e-2
 run_params['c_armijo']          = 0.0
-run_params['target_bnorm']      = 1e-3 # TODO: Look to JF for an appropriate value
+run_params['target_bnorm']      = 1e-4 # TODO: Look to JF for an appropriate value
 run_params['delta']             = 0.05 
-run_params['alpha_pen']         = 1e3
-run_params['normal_pertubation_size'] = 0.005
+run_params['alpha_pen']         = 10
+run_params['normal_pertubation_size'] = 0.002  # 2mm,5mm,10mm
 run_params['gp_lengthscale']    = 0.5
-run_params['max_shift']         = 0.005  # TODO: figure out how to set this
-run_params['max_rotation']      = np.pi/8 # TODO: figure out how to set this
-run_params['data_dir'] = "./output/" # data save location
+run_params['max_shift']         = 0.005 # 2mm,5mm,10mm
+# angle set so it rotates a 1.5m coil by 2mm, 5mm, 10mm
+# 2mm = pi/1570, 5mm=pi/628, 10mm=pi/313
+run_params['max_rotation']      = np.pi/1570 
+run_params['lr_sched']          = "MultiStepLR"
+run_params['lr_gamma']          = 0.1
+run_params['lr_benchmarks']     = [100,200]
+run_params['data_dir']          = "./output/" # data save location
 
 # seed and date
 now     = datetime.now()

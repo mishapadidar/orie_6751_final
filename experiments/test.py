@@ -37,6 +37,19 @@ c_armijo = run_params['c_armijo']
 alpha_pen = run_params['alpha_pen']
 target_bnorm = run_params['target_bnorm']
 delta = run_params['delta']
+lr_sched = run_params['lr_sched']
+lr_gamma = run_params['lr_gamma']
+lr_benchmarks = run_params['lr_benchmarks']
+
+if lr_sched == "MultiStepLR":
+  def lr_sched(step):
+    a = np.sum(lr_benchmarks < step)
+    # lr_gamma should be in (0,1)
+    return (lr_gamma)**a
+elif lr_sched == "LambdaLR":
+  lr_sched = lambda step: 1./(1+lr_gamma*np.sqrt(step))
+else:
+  lr_sched = None
 
 # MPI_INIT
 comm = MPI.COMM_WORLD
@@ -137,28 +150,14 @@ if problem_num == 0:
 
 
 f0 = Obj(x0)
-#g0 = Grad(x0)
-#gfd = fdiff_jac(Obj,x0,h=1e-3)
 if verbose:
   print(f"Starting from Objective value of {f0}")
-  #print(g0)
-  #print(gfd)
-  #print(g0-gfd)
-#quit()
 
-# optimize w/ BFGS
-#def callback(x):
-#  f = Obj(x)
-#  if verbose:
-#    print(f)
-#    sys.stdout.flush()
-#from scipy.optimize import minimize
-#res = minimize(Obj, x0, method='BFGS', jac=Grad, callback=callback, options={'gtol':gtol,'maxiter':max_iter})
-#print(res)
-xopt,X,fX = gradient_descent(Obj,Grad,x0,mu0 = mu0,max_iter=max_iter,
-        gtol=gtol,c_armijo=c_armijo,mu_min=mu_min,mu_max=mu_max,verbose=verbose)
-#xopt,X,fX = BFGS(Obj,Grad,x0,mu0 = mu0,max_iter=max_iter,
-#  gtol=gtol,c_armijo=c_armijo,mu_min=mu_min,mu_max=mu_max,verbose=verbose)
+# optimize
+#xopt,X,fX = gradient_descent(Obj,Grad,x0,mu0 = mu0,max_iter=max_iter,
+#        gtol=gtol,c_armijo=c_armijo,mu_min=mu_min,mu_max=mu_max,verbose=verbose)
+xopt,X,fX = subgradient_descent(Obj,Grad,x0,mu0 = mu0,max_iter=max_iter,
+        gtol=gtol,lr_sched=lr_sched,verbose=verbose)
 
 # get the function values along the trajectory
 fXopt          = fX[-1]
