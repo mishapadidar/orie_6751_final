@@ -25,7 +25,7 @@ def gradient_descent(Loss,grad,x0,mu0 = 1e-3,max_iter=1000,gtol=1e-3,c_armijo=1e
       print(nn,f_k,np.linalg.norm(g_k))
       stdout.flush()
     # double the step size to counter backtracking
-    mu_k = max(2*mu_k,mu_max)
+    mu_k = min(2*mu_k,mu_max)
     
     # compute step 
     x_kp1 = x_k -mu_k*g_k;
