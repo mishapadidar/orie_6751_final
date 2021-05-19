@@ -55,7 +55,7 @@ def coil_coil_sep(x,n_coils,n_seg=100,alpha=-1.0,use_smoothmin=True,return_np=Fa
          to the min.
 
   return: 1D-array (n_coils-1,); 
-          array of min distances between adjacent coils. min distance
+          array of min distances between all coil pairs. min distance
           is computed using smooth-min.
   """
   if not torch.is_tensor(x):
