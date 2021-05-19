@@ -22,7 +22,7 @@ def subgradient_descent(Loss,grad,x0,mu0 = 1e-3,max_iter=1000,gtol=1e-3,verbose=
   nn = 0
   while np.linalg.norm(g_k) > gtol and nn < max_iter:
     if verbose and nn%1 == 0:
-      print(nn,f_k,np.linalg.norm(g_k))
+      print(f"{nn})",f_k)
       stdout.flush()
 
     # compute step 
