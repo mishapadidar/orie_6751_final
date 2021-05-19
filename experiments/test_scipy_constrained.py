@@ -8,6 +8,7 @@ sys.path.append('../utils/')
 sys.path.append('../problem/')
 from get_input_settings import get_input_settings
 from ccsep import coil_coil_sep_grad,coil_coil_sep
+from cpsep import cpsep_grad,cpsep
 sys.path.append('../../FOCUS/python/')
 from focuspy import FOCUSpy
 import focus
@@ -52,41 +53,47 @@ test.callback(x0)
 
 # wrap coil sep functions
 n_coils = focus.globals.ncoils
-kwargs = {}
-kwargs['n_coils']    = n_coils
-kwargs['n_seg']      = 100 # coil discretization
-kwargs['alpha']      = -100
-kwargs['return_np']  = True
+cckwargs = {}
+cckwargs['n_coils']    = n_coils
+cckwargs['n_seg']      = 100 # coil discretization
+cckwargs['alpha']      = -100
+cckwargs['return_np']  = True
 # constraint parameters
-constraint_eps = 0.23**2 
+cc_eps = 0.23**2 
 lam  = 1e3 # initial lagrange multiplier
+# coil-plasma separation
+cpkwargs = {}
+cpkwargs['n_coils'] = n_coils
+cpkwargs['n_seg']   = 100
+cpkwargs['alpha']   = -1000
+cpkwargs['ntor']    = 200
+cpkwargs['npol']    = 200
+cpkwargs['return_np']  = True
+cpkwargs['plasma_file'] = '../experiments/w7x_jf.boundary'
+cp_eps = 0.5**2
+
 # number of iterative penalty solves
 n_runs = 1
-
-# coil-coil constriants
-def ccsep(x,**kwargs):
-  """
-  constraint of form
-  c(x)-eps >= 0 
-  """
-  return coil_coil_sep(x,**kwargs) - constraint_eps
-def ccsep_grad(x,**kwargs):
-  return coil_coil_sep_grad(x,**kwargs)
 
 # new objective and gradient
 def myObj(x):
   # penalty function
-  F =  test.func(x) + lam*np.sum(np.minimum(coil_coil_sep(x,**kwargs) - constraint_eps,0.0)**2)
+  F =  test.func(x)
+  F += lam*np.sum(np.minimum(coil_coil_sep(x,**cckwargs) - cc_eps,0.0)**2)
+  F += lam*np.sum(np.minimum(cpsep(x,**cpkwargs) - cp_eps,0.0)**2)
   #print('f(x) = ',F)
   #sys.stdout.flush()
   return F
 def myGrad(x):
   # grad(f)
-  f_g    = test.grad(x)
+  grad    = test.grad(x)
   # jac(min(constraint,0)**2)
-  con_jac  = 2*np.minimum(coil_coil_sep(x,**kwargs) - constraint_eps,0.0) * coil_coil_sep_grad(x,**kwargs).T
+  ccgrad  = 2*np.minimum(coil_coil_sep(x,**cckwargs) - cc_eps,0.0) * coil_coil_sep_grad(x,**cckwargs).T
+  g_pen   = np.sum(ccgrad,axis=1)
+  cpgrad  = 2*np.minimum(cpsep(x,**cpkwargs) - cp_eps,0.0) * cpsep_grad(x,**cpkwargs).T
+  g_pen  += np.sum(cpgrad,axis=1)
   # sum them
-  ret    = f_g + lam*np.sum(con_jac,axis=1)
+  ret    = grad + lam*g_pen
   return ret
 
 def callback(x):
@@ -106,7 +113,7 @@ for ii in range(n_runs):
   x_best    = res.x
   fX_best   = myObj(x_best) # make sure to reevaluate the function
   fvec_best = test.fvec(x_best, ['bnorm','ttlen','curv'])
-  cX_best   = ccsep(x_best,**kwargs)
+  cX_best   = coil_coil_sep(x_best,**cckwargs) - cc_eps
   if master:
     print(f"run {ii}/{n_runs} complete")
     print(f"fopt: {fX_best}")
