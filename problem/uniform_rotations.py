@@ -20,15 +20,30 @@ def generate_uniform_rotation(max_ang = np.pi):
   Q2 = np.array([[np.cos(ang),np.sin(ang)],[-np.sin(ang),np.cos(ang)]])
   # nest it in the 3d matrix
   A[1:,1:] = Q2.copy()
-  # generate a point uniformly within angle max_ang of e_1
-  while True:
-    # generate v on the unit sphere
-    v = np.random.randn(d)
-    v =v/np.linalg.norm(v)
-    # check angle
-    if np.arccos(v @ e1) <= max_ang:
-      # success: exit the while loop
-      break
+
+  if max_ang <np.pi/2:
+    lb = [0,-np.sin(max_ang),-np.sin(max_ang)]
+    ub = [1,np.sin(max_ang),np.sin(max_ang)]
+    # generate a point uniformly within angle max_ang of e_1
+    while True:
+      # generate v on the unit sphere
+      v = np.random.uniform(lb,ub)
+      v =v/np.linalg.norm(v)
+      # check angle
+      if np.arccos(v @ e1) <= max_ang:
+        # success: exit the while loop
+        break
+  if max_ang>=np.pi/2:
+    # generate a point uniformly within angle max_ang of e_1
+    while True:
+      # generate v on the unit sphere
+      v = np.random.randn(d)
+      v =v/np.linalg.norm(v)
+      # check angle
+      if np.arccos(v @ e1) <= max_ang:
+        # success: exit the while loop
+        break
+
   # compute y (i.e. x from 3.1b)
   y = (e1 - v)/np.linalg.norm(e1-v)
   # compute household reflection
@@ -40,7 +55,7 @@ if __name__ == "__main__":
   n = 1000
   d = 3 # dim
   # amount to rotation 
-  max_ang = np.pi/2 # choose 0<= max_ang <= pi
+  max_ang = np.pi/3 # choose 0<= max_ang <= pi
   # point to rotate
   x = np.array([1,0,0])
   R = np.zeros((n,d))
