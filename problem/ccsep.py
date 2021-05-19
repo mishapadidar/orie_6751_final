@@ -86,19 +86,25 @@ def coil_coil_sep(x,n_coils,n_seg=100,alpha=-1.0,use_smoothmin=True,return_np=Fa
   # compute the coil set (n_coils,dim,n_seg)
   C = torch.matmul(X,r)
 
-  ret = torch.zeros(n_coils-1) # function values
+  # ret = torch.zeros(n_coils-1) # function values
+  ret = torch.zeros(int(n_coils*(n_coils-1)/2)) # function values
+  idx = 0
   for ii in range(n_coils-1):
-    # compute pairwise distances between all points on the coils
-    z  = C[ii].T @ C[ii+1] # cross term
-    nx = torch.sum(C[ii]**2,dim=0).reshape(n_seg,1)
-    ny = torch.sum(C[ii+1]**2,dim=0).reshape(1,n_seg)
-    dist = nx - 2*z + ny
-    if use_smoothmin:
-      # compute smooth-min
-      ret[ii] = logSumExp(dist, alpha,**kwargs)
-    else:
-      # use regular min
-      ret[ii] = torch.min(dist)
+    for jj in range(n_coils-1):
+      if jj < ii:
+        continue
+      # compute pairwise distances between all points on the coils
+      z  = C[ii].T @ C[ii+1] # cross term
+      nx = torch.sum(C[ii]**2,dim=0).reshape(n_seg,1)
+      ny = torch.sum(C[ii+1]**2,dim=0).reshape(1,n_seg)
+      dist = nx - 2*z + ny
+      if use_smoothmin:
+        # compute smooth-min
+        ret[idx] = logSumExp(dist, alpha,**kwargs)
+      else:
+        # use regular min
+        ret[idx] = torch.min(dist)
+      idx += 1
 
   if return_np is False:
     return ret
@@ -121,10 +127,9 @@ def fdiff_jacobian(f,x0,h=1e-6,**kwargs):
 
 if __name__ == "__main__":
   import pickle
-  #d = pickle.load(open("../data/w7x_jf_cg_optimization_seed_2212114.pickle","rb"))
-  d = pickle.load(open("../data/cg_adam_warm_starts/w7x_jf_cg_optimization_seed_2151050.pickle","rb"))
-  x = d['x_best']
-  n_coils = 5
+  d = pickle.load(open("../experiments/output/baseline_20210519122852.pickle","rb"))
+  x = d['xopt']
+  n_coils = 3
   kwargs = {}
   kwargs['n_coils'] = n_coils
   kwargs['n_seg']   = 100
