@@ -4,12 +4,14 @@ import sys
 sys.path.append('../optim/')
 from bfgs import BFGS
 from gradient_descent import gradient_descent
+from subgradient_descent import subgradient_descent
 sys.path.append('../utils/')
 from get_input_settings import get_input_settings
 from finite_difference import fdiff_jac
 sys.path.append('../problem/')
 from normal_covariances import compute_fourier_coefficient_covariance_for_FOCUS
 from perturb_coil import perturb_coil
+import ccsep
 sys.path.append('../../FOCUS/python/')
 from mpi4py import MPI
 from focuspy import FOCUSpy
@@ -23,7 +25,6 @@ problem_num = run_params['problem_num']
 seed = run_params['seed']
 data_dir = run_params['data_dir']
 data_filename = run_params['data_filename']
-max_rotation = run_params['max_rotation']
 max_shift = run_params['max_shift']
 normal_pertubation_size= run_params['normal_pertubation_size']
 gp_lengthscale = run_params['gp_lengthscale']
@@ -40,10 +41,11 @@ delta = run_params['delta']
 lr_sched = run_params['lr_sched']
 lr_gamma = run_params['lr_gamma']
 lr_benchmarks = run_params['lr_benchmarks']
+ccsep_eps = run_params['ccsep_eps']
 
 if lr_sched == "MultiStepLR":
   def lr_sched(step):
-    a = np.sum(lr_benchmarks < step)
+    a = np.sum(np.array(lr_benchmarks) < step)
     # lr_gamma should be in (0,1)
     return (lr_gamma)**a
 elif lr_sched == "LambdaLR":
@@ -85,6 +87,23 @@ cov_file = f"../problem/fourier_coefficient_covariances_{n_coils}_coils_\
 cov_data = pickle.load(open(cov_file,"rb"))
 C = cov_data['all_coils_fourier_coeffs']
 
+# determine the max rotation: solve r*theta = max_shift
+max_rotation = max_shift/focus.globals.init_radius
+
+# define coil separation penalty
+kwargs = {}
+kwargs['n_coils'] = n_coils
+kwargs['n_seg']   = 100
+kwargs['alpha']   = -100 # LSE
+def ccsepObj(x):
+  f = ccsep.coil_coil_sep(x,return_np=True,**kwargs) # vector valued
+  return np.sum(np.minimum(f - ccsep_eps,0.0)**2)
+def ccsepGrad(x):
+  f = ccsep.coil_coil_sep(x,return_np=True,**kwargs) # vector valued
+  jac = ccsep.coil_coil_sep_grad(x,**kwargs) 
+  jacpen  = 2*np.minimum(f - ccsep_eps,0.0) * jac.T
+  return np.sum(jacpen,axis=1)
+
 # set the objective
 if problem_num == 0:
   """minimize_{x,t} CVaR_{1-delta}(bnorm)
@@ -100,7 +119,7 @@ if problem_num == 0:
     t = y[-1]
     x = y[:-1]
     ## evaluate the constraints
-    f_pen = test.fvec(x,['curv'])[0]
+    f_pen = test.fvec(x,['curv'])[0] + ccsepObj(x)
     # reset the seed so we get the same perturbations
     np.random.seed(seed)
     _X = [perturb_coil(x,C,max_rotation,max_shift,n_coils,nfcoil) for ii in range(batch_size)]
@@ -110,6 +129,8 @@ if problem_num == 0:
     f_stoch = np.mean(np.maximum(_fX - t,0.0))/delta + t
     # make penalty obj
     F = f_stoch + alpha_pen*f_pen
+    if verbose:
+      print(f_stoch,f_pen)
 
     # non-stochastic test
     #fs = test.fvec(x,['bnorm','curv'])
@@ -122,7 +143,7 @@ if problem_num == 0:
     t = y[-1]
     x = y[:-1]
     # evaluate the constraint gradients
-    g_pen = test.gvec(x,['curv'])[0]
+    g_pen = test.gvec(x,['curv'])[0] + ccsepGrad(x)
     # reset the seed so we get the same perturbations
     np.random.seed(seed)
     _X = [perturb_coil(x,C,max_rotation,max_shift,n_coils,nfcoil) for ii in range(batch_size)]
@@ -152,6 +173,7 @@ if problem_num == 0:
 f0 = Obj(x0)
 if verbose:
   print(f"Starting from Objective value of {f0}")
+  sys.stdout.flush()
 
 # optimize
 #xopt,X,fX = gradient_descent(Obj,Grad,x0,mu0 = mu0,max_iter=max_iter,
@@ -167,13 +189,16 @@ if master:
   print(f"gopt: {gopt}")
   print(f"norm(grad): {np.linalg.norm(gopt)}")
 
-# TODO: split the xopt from topt
 if master:
   # save the results
   d                    = {}
   d['X']               = X
   d['fX']              = fX
-  d['xopt']            = xopt
+  if problem_num == 0: # remove the CVar variable
+    d['xopt']        = xopt[:-1]
+    d['VaRopt']      = xopt[-1]
+  else:
+    d['xopt']        = xopt
   d['fXopt']           = fXopt
   d.update(run_params)
   d.update(get_input_settings(focus.globals))
