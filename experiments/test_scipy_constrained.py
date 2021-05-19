@@ -51,7 +51,7 @@ test.time = time.time()
 test.callback(x0)
 
 # wrap coil sep functions
-n_coils = 3
+n_coils = focus.globals.ncoils
 kwargs = {}
 kwargs['n_coils']    = n_coils
 kwargs['n_seg']      = 100 # coil discretization
