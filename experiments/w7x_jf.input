@@ -26,19 +26,19 @@
  case_bnormal   =        1              ! 0: keep raw Bn error; 1: Bn residue normalized to local |B|
  case_length    =        1              ! 1: quadratic format, converging the target length; 2: exponential format, as short as possible
  case_curv      =        3              ! Thomas Kruger
- k0             =        3.000D+00      ! Thomas Kruger
+ k0             =        0.100D+00      ! Thomas Kruger
  curv_alpha     =        2.000D+00      ! Thomas Kruger  
  weight_bnorm   =        1.000D+00      ! weight for real space Bn errors
  weight_bharm   =        0.000D+00      ! weight for Bnm harmonic errors
  weight_tflux   =        0.000D+00      ! weight for toroidal flux error
  target_tflux   =        0.000D+00      ! target for the toroidal flux
- weight_ttlen   =        0.000D+00      ! weight for coil length error
+ weight_ttlen   =        1.000D+00      ! weight for coil length error
  target_length  =        8.000D+00      ! target value (or for normalization) of the coils length, if zero, automatically set to initial actual length
  weight_specw   =        0.000D+00      ! weight for spectral condensation error
  weight_cssep   =        0.000D+00      ! weight for coil-surface separation constraint
  weight_inorm   =        1.000D+00	! weight for normalization of current. Larger weight makes the derivatives more important.
  weight_gnorm   =        1.000D+00	! weight for normalization of geometric coefficients. Larger weight makes the derivatives more important.
- weight_curv    =        1.000D+00      ! Thomas Kruger
+ weight_curv    =        0.000D+00      ! Thomas Kruger
 
  case_optimize  =        1              ! -2: check the 2nd derivatives (not ready); -1: check the 1st derivatives; 0: no optimizations performed; 1: optimizing using the gradient (DF and/or CG); 
  exit_tol       =        1.000D-04      ! Exit the optimizer if the percent change in the cost function over the last 5 steps is below this threshold
