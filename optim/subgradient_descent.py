@@ -27,15 +27,12 @@ def subgradient_descent(Loss,grad,x0,mu0 = 1e-3,max_iter=1000,gtol=1e-3,verbose=
 
     # compute step 
     x_kp1 = x_k -mu_k*g_k;
-    f_kp1 = Loss(x_kp1);
     
     # reset for next iteration
     x_k   = np.copy(x_kp1)
-    f_k   = f_kp1;
+    f_k   = Loss(x_k);
+    g_k   = grad(x_k);
     
-    # compute gradient
-    g_k  = grad(x_k);
-
     # update iteration counter
     nn += 1
     X = np.copy(np.vstack((X,x_k)))
