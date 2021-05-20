@@ -138,6 +138,7 @@ if master:
   d['xopt']            = x_best
   d['fXopt']           = fX_best
   d['method']            = method
+  d['problem_num']       = "Deterministic"
   d['maxiter']           = maxiter
   d['seed']              = seed
   d['date']              = now
