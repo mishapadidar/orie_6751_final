@@ -65,7 +65,7 @@ lam  = 1e2 # initial lagrange multiplier
 cpkwargs = {}
 cpkwargs['n_coils'] = n_coils
 cpkwargs['n_seg']   = 100
-cpkwargs['alpha']   = -1000
+cpkwargs['alpha']   = -100
 cpkwargs['ntor']    = 200
 cpkwargs['npol']    = 200
 cpkwargs['return_np']  = True
@@ -83,8 +83,8 @@ def myObj(x):
   F = ff[0] + lam*ff[1]
   F += lam*np.sum(np.minimum(coil_coil_sep(x,**cckwargs) - cc_eps,0.0)**2)
   F += lam*np.sum(np.minimum(cpsep(x,**cpkwargs) - cp_eps,0.0)**2)
-  #print('f(x) = ',F)
-  #sys.stdout.flush()
+  print('f(x) = ',F)
+  sys.stdout.flush()
   return F
 def myGrad(x):
   # grad(f)
@@ -101,10 +101,11 @@ def myGrad(x):
   return ret
 
 def callback(x):
-  f0 = myObj(x)
-  if master:
-    print('f(x) = ',f0)
-    sys.stdout.flush()
+  pass
+  # f0 = myObj(x)
+  # if master:
+  #   print('f(x) = ',f0)
+  #   sys.stdout.flush()
 
 # optimize
 for ii in range(n_runs):
