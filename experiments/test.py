@@ -7,15 +7,15 @@ from gradient_descent import gradient_descent
 from subgradient_descent import subgradient_descent
 sys.path.append('../utils/')
 from get_input_settings import get_input_settings
-from finite_difference import fdiff_jac
 sys.path.append('../problem/')
 from normal_covariances import compute_fourier_coefficient_covariance_for_FOCUS
 from perturb_coil import perturb_coil
-import ccsep
+import ccsep,cpsep
 sys.path.append('../../FOCUS/python/')
 from mpi4py import MPI
 from focuspy import FOCUSpy
 import focus
+import multiprocessing
 
 # load a pickle with the run params
 args = sys.argv
@@ -42,6 +42,8 @@ lr_sched = run_params['lr_sched']
 lr_gamma = run_params['lr_gamma']
 lr_benchmarks = run_params['lr_benchmarks']
 ccsep_eps = run_params['ccsep_eps']
+cpsep_eps = run_params['cpsep_eps']
+x0_file = run_params['x0_file']
 
 if lr_sched == "MultiStepLR":
   def lr_sched(step):
@@ -73,8 +75,21 @@ focus.globals.iout = 0
 # set the seed
 np.random.seed(seed)
 
+
+"""
+===============================================
+
+Prepare Perturbatons, x0, objectives, constraints
+
+"""
+
+
 # starting point
-x0     = focus.globals.xdof
+if x0_file is not None:
+  d = pickle.load(open(x0_file,"rb"))
+  x0 = d['xopt']
+else:
+  x0     = focus.globals.xdof
 
 # perturbation covariance
 n_coils = focus.globals.ncoils 
@@ -91,23 +106,65 @@ C = cov_data['all_coils_fourier_coeffs']
 max_rotation = max_shift/focus.globals.init_radius
 
 # define coil separation penalty
-kwargs = {}
-kwargs['n_coils'] = n_coils
-kwargs['n_seg']   = 100
-kwargs['alpha']   = -100 # LSE
+cckwargs = {}
+cckwargs['n_coils']    = n_coils
+cckwargs['n_seg']      = 100 # coil discretization
+cckwargs['alpha']      = -100
+cckwargs['return_np']  = True
 def ccsepObj(x):
-  f = ccsep.coil_coil_sep(x,return_np=True,**kwargs) # vector valued
+  f = ccsep.coil_coil_sep(x,**cckwargs) # vector valued
   return np.sum(np.minimum(f - ccsep_eps,0.0)**2)
 def ccsepGrad(x):
-  f = ccsep.coil_coil_sep(x,return_np=True,**kwargs) # vector valued
-  jac = ccsep.coil_coil_sep_grad(x,**kwargs) 
+  f = ccsep.coil_coil_sep(x,**cckwargs) # vector valued
+  jac = ccsep.coil_coil_sep_grad(x,**cckwargs) 
   jacpen  = 2*np.minimum(f - ccsep_eps,0.0) * jac.T
   return np.sum(jacpen,axis=1)
+# coil-plasma separation
+cpkwargs = {}
+cpkwargs['n_coils'] = n_coils
+cpkwargs['n_seg']   = 100
+cpkwargs['alpha']   = -1000
+cpkwargs['ntor']    = 200
+cpkwargs['npol']    = 200 # should be equal to ntor
+cpkwargs['return_np']  = True
+cpkwargs['plasma_file'] = '../experiments/w7x_jf.boundary'
+def cpsepObj(x):
+  f = cpsep.cpsep(x,**cpkwargs) # vector valued
+  return np.sum(np.minimum(f - ccsep_eps,0.0)**2)
+def cpsepGrad(x):
+  f = cpsep.cpsep(x,**cpkwargs) # vector valued
+  jac = cpsep.cpsep_grad(x,**cpkwargs) 
+  jacpen  = 2*np.minimum(f - cpsep_eps,0.0) * jac.T
+  return np.sum(jacpen,axis=1)
+
+def constraints(x):
+    f_pen  = np.sum(test.fvec(x,['ttlen']))
+    f_pen += ccsepObj(x)
+    f_pen += cpsepObj(x)
+    return f_pen
+def constraints_grad(x):
+    g_pen = test.gvec(x,['ttlen'])[0]
+    g_pen += ccsepGrad(x)
+    g_pen += cpsepGrad(x)
+    return g_pen
+
+#  for pool evaluation of stochastic objective
+def pool_bnorm(_x): 
+  return test.fvec(_x,['bnorm'])[0]
+def pool_bnorm_grad(_x):
+    return test.gvec(_x,['bnorm'])[0]
+
+
+"""
+===============================================
+
+Define the problems
+
+"""
 
 # set the objective
 if problem_num == 0:
   """minimize_{x,t} CVaR_{1-delta}(bnorm)
-  s.t. curvature constraint
   """
   # append the CVaR t parameter
   t0 = 0.0
@@ -119,23 +176,21 @@ if problem_num == 0:
     t = y[-1]
     x = y[:-1]
     ## evaluate the constraints
-    f_pen = test.fvec(x,['curv'])[0] + ccsepObj(x)
+    f_pen = constraints(x)
     # reset the seed so we get the same perturbations
     np.random.seed(seed)
     _X = [perturb_coil(x,C,max_rotation,max_shift,n_coils,nfcoil) for ii in range(batch_size)]
-    #_X = np.array([x,x])
+
     # compute the CVaR
-    _fX = np.array([test.fvec(_x,['bnorm'])[0] for _x in _X])
+    with multiprocessing.Pool(4) as pool:
+      _fX = np.array(pool.map(pool_bnorm, _X))
+    # _fX = np.array([test.fvec(_x,['bnorm'])[0] for _x in _X])
+
     f_stoch = np.mean(np.maximum(_fX - t,0.0))/delta + t
     # make penalty obj
     F = f_stoch + alpha_pen*f_pen
     if verbose:
       print(f_stoch,f_pen)
-
-    # non-stochastic test
-    #fs = test.fvec(x,['bnorm','curv'])
-    #f_stoch = np.mean(np.maximum(fs[0] - t,0.0))/delta + t
-    #F = f_stoch + alpha_pen*fs[1]
     return F
 
   def Grad(y):
@@ -143,14 +198,18 @@ if problem_num == 0:
     t = y[-1]
     x = y[:-1]
     # evaluate the constraint gradients
-    g_pen = test.gvec(x,['curv'])[0] + ccsepGrad(x)
+    g_pen = constraints_grad(x)
     # reset the seed so we get the same perturbations
     np.random.seed(seed)
     _X = [perturb_coil(x,C,max_rotation,max_shift,n_coils,nfcoil) for ii in range(batch_size)]
-    #_X = np.array([x,x])
+
     # compute the CVaR gradient
-    _fX = np.array([test.fvec(_x,['bnorm'])[0] for _x in _X])
-    _gX = np.array([test.gvec(_x,['bnorm'])[0] for _x in _X])
+    with multiprocessing.Pool(4) as pool:
+      _fX = np.array(pool.map(pool_bnorm, _X))
+      _gX = np.array(pool.map(pool_bnorm_grad, _X))
+    # _fX = np.array([test.fvec(_x,['bnorm'])[0] for _x in _X])
+    # _gX = np.array([test.gvec(_x,['bnorm'])[0] for _x in _X])
+
     g_stoch = np.mean((_fX-t > 0.0) * _gX.T,axis=1)/delta
     # make penalty obj
     dgdx = g_stoch + alpha_pen*g_pen
@@ -159,16 +218,68 @@ if problem_num == 0:
     # stack
     g = np.append(dgdx,dgdt)
 
-    # non-stochastic test
-    #fs = test.fvec(x,['bnorm','curv'])
-    #gs = test.gvec(x,['bnorm','curv'])
-    #g_stoch = (fs[0] - t > 0.0) * gs[0]/delta
-    #dgdx = g_stoch + alpha_pen*gs[1]
-    #dgdt = 1 - np.mean(fs[0]-t > 0)/delta
-    #g = np.append(dgdx,dgdt)
-
     return g
 
+elif problem == 1:
+  """Risk Neutral Problem"""
+
+  def Obj(x):
+    ## evaluate the constraints
+    f_pen = constraints(x)
+    # reset the seed so we get the same perturbations
+    np.random.seed(seed)
+    _X = [perturb_coil(x,C,max_rotation,max_shift,n_coils,nfcoil) for ii in range(batch_size)]
+
+    # compute the Expectation
+    with multiprocessing.Pool(4) as pool:
+      _fX = np.array(pool.map(pool_bnorm, _X))
+
+    f_stoch = np.mean(_fX)
+    # make penalty obj
+    F = f_stoch + alpha_pen*f_pen
+    if verbose:
+      print(f_stoch,f_pen)
+    return F
+
+  def Grad(x):
+    # evaluate the constraint gradients
+    g_pen = constraints_grad(x)
+    # reset the seed so we get the same perturbations
+    np.random.seed(seed)
+    _X = [perturb_coil(x,C,max_rotation,max_shift,n_coils,nfcoil) for ii in range(batch_size)]
+
+    # sample average the gradient
+    with multiprocessing.Pool(4) as pool:
+      _gX = np.array(pool.map(pool_bnorm_grad, _X))
+    g_stoch = np.mean(_gX,axis=0)
+
+    # make penalty obj
+    G = g_stoch + alpha_pen*g_pen
+
+    return G
+
+elif problem == 2:
+  """Maximize probability of low field error"""
+
+  # TODO: define the problem here
+
+elif problem == 3:
+  """VaR with Chernoff Approximation"""
+
+  # TODO: define the problem here
+
+elif problem == 4:
+  """Maximize probability with Chernoff Approximation"""
+
+  # TODO: define the problem here
+
+
+"""
+===============================================
+
+Now run the optimization
+
+"""
 
 f0 = Obj(x0)
 if verbose:
@@ -176,8 +287,8 @@ if verbose:
   sys.stdout.flush()
 
 # optimize
-#xopt,X,fX = gradient_descent(Obj,Grad,x0,mu0 = mu0,max_iter=max_iter,
-#        gtol=gtol,c_armijo=c_armijo,mu_min=mu_min,mu_max=mu_max,verbose=verbose)
+# xopt,X,fX = gradient_descent(Obj,Grad,x0,mu0 = mu0,max_iter=max_iter,
+       # gtol=gtol,c_armijo=c_armijo,mu_min=mu_min,mu_max=mu_max,verbose=verbose)
 xopt,X,fX = subgradient_descent(Obj,Grad,x0,mu0 = mu0,max_iter=max_iter,
         gtol=gtol,lr_sched=lr_sched,verbose=verbose)
 
