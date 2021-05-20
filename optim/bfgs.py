@@ -31,7 +31,7 @@ def BFGS(Loss,grad,x0,mu0 = 1e-6,max_iter=1000,gtol=1e-3,c_armijo=1e-9,mu_min=1e
   nn = 0
   while np.linalg.norm(g_k) > gtol and nn < max_iter:
     if verbose and nn%1 == 0:
-      print('n: ',nn,'f_k: ',f_k,'mu: ',mu_k)
+      print(f"{nn})",f_k)
       stdout.flush()
     # double the step size to counter backtracking
     mu_k = min(2*mu_k,mu_max);
