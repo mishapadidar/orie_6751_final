@@ -19,7 +19,7 @@
  IsVaryCurrent  =        0              ! 0: all the currents   fixed; 1: currents   can be changed; overwritten by ext.focus
  IsVaryGeometry =        1              ! 0: all the geometries fixed; 1: geometries can be changed; overwritten by ext.focus
  NFcoil         =        2              ! number of Fourier harmonics representing the coils; overwritten by ext.focus
- Nseg           =       32              ! number of coil segments for discretizing; overwritten by ext.focus
+ Nseg           =      128              ! number of coil segments for discretizing; overwritten by ext.focus
 
  IsNormalize    =        0              ! 0: do not normalize coil parameters; 1: normalize; I = I/I0, x = x/R0; I0 & R0 are quadrtic mean values.
  IsNormWeight   =        0              ! 0: do not normalize the weights; 1: normalize the weights
