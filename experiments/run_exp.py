@@ -14,13 +14,13 @@ if os.path.exists(run_params_dir) is False:
   os.mkdir(run_params_dir)
 run_params = {}
 
-bs  = 1 # batch size
-nps = 0.005 # 2mm,5mm,10mm; normal perturbation
+bs  = 50 # batch size
+nps = 0.002 # 2mm,5mm,10mm; normal perturbation
 MS  = [0.002,0.005,0.01] # max shift
 for ms in MS:
   mpi_nodes                       = 1
   # problem parameters
-  run_params['problem_num']       = 0
+  run_params['problem_num']       = 1
   run_params['target_bnorm']      = 1e-4 # only for p1...
   run_params['delta']             = 0.05 
   run_params['batch_size']        = bs
@@ -28,18 +28,20 @@ for ms in MS:
   run_params['ccsep_eps']         = (0.23)**2 
   run_params['cpsep_eps']         = (0.5)**2 
   # starting point
-  run_params['x0_file']           = "./output/baseline_20210519202815.pickle"
+  #run_params['x0_file']           = "./output/baseline_20210519202815.pickle"
+  run_params['x0_file']           = None
   # uncertainty parmeters
-  run_params['normal_pertubation_size'] = nps  # 2mm,5mm,10mm
+  run_params['normal_perturbation_size'] = nps  # 2mm,5mm,10mm
   run_params['gp_lengthscale']    = 0.5
   run_params['max_shift']         = ms # 2mm,5mm,10mm
   # optimizer params
+  run_params['optimizer']         = "GD"
   run_params['max_iter']          = 300
   run_params['mu0']               = 1e-2
   run_params['lr_sched']          = "MultiStepLR"
   run_params['lr_gamma']          = 0.1
   run_params['lr_benchmarks']     = [50,100,200,250]
-  run_params['mu_min']            = 1e-16
+  run_params['mu_min']            = 1e-12
   run_params['mu_max']            = 1e6
   run_params['gtol']              = 1e-2
   run_params['c_armijo']          = 0.0
@@ -53,7 +55,7 @@ for ms in MS:
   run_params['seed']  = seed
   # file name
   base_name = f"problem_{run_params['problem_num']}_batch_size_{run_params['batch_size']}"+\
-    f"_delta_{run_params['delta']}_psize_{run_params['normal_pertubation_size']}"+\
+    f"_delta_{run_params['delta']}_psize_{run_params['normal_perturbation_size']}"+\
     f"_shift_{run_params['max_shift']}_{barcode}"
   data_filename  = run_params['data_dir'] + "data_" + base_name + ".pickle"
   run_params['data_filename'] = data_filename

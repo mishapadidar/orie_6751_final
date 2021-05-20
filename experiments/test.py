@@ -26,7 +26,7 @@ seed = run_params['seed']
 data_dir = run_params['data_dir']
 data_filename = run_params['data_filename']
 max_shift = run_params['max_shift']
-normal_pertubation_size= run_params['normal_pertubation_size']
+normal_perturbation_size= run_params['normal_perturbation_size']
 gp_lengthscale = run_params['gp_lengthscale']
 batch_size = run_params['batch_size']
 max_iter = run_params['max_iter']
@@ -100,7 +100,7 @@ n_modes = nfcoil + 1
 
 # prepare the normal covariance matrix
 cov_file = f"../problem/fourier_coefficient_covariances_{n_coils}_coils_\
-{nfcoil}_modes_{normal_pertubation_size}_p_{gp_lengthscale}_l.pickle"
+{nfcoil}_modes_{normal_perturbation_size}_p_{gp_lengthscale}_l.pickle"
 cov_data = pickle.load(open(cov_file,"rb"))
 C = cov_data['all_coils_fourier_coeffs']
 
