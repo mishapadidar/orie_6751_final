@@ -41,7 +41,7 @@ x0 = focus.globals.xdof
 # optimizer options
 method = 'BFGS'
 maxiter = 1000
-gtol    = 1e-2
+gtol    = 1e-4
 focus.globals.cg_maxiter = maxiter
 
 if master:
@@ -60,7 +60,7 @@ cckwargs['alpha']      = -100
 cckwargs['return_np']  = True
 # constraint parameters
 cc_eps = 0.23**2 
-lam  = 1e3 # initial lagrange multiplier
+lam  = 1e2 # initial lagrange multiplier
 # coil-plasma separation
 cpkwargs = {}
 cpkwargs['n_coils'] = n_coils
@@ -78,7 +78,9 @@ n_runs = 1
 # new objective and gradient
 def myObj(x):
   # penalty function
-  F =  test.func(x)
+  #F =  test.func(x)
+  ff =  test.fvec(x,['bnorm','ttlen'])
+  F = ff[0] + lam*ff[1]
   F += lam*np.sum(np.minimum(coil_coil_sep(x,**cckwargs) - cc_eps,0.0)**2)
   F += lam*np.sum(np.minimum(cpsep(x,**cpkwargs) - cp_eps,0.0)**2)
   #print('f(x) = ',F)
@@ -86,7 +88,9 @@ def myObj(x):
   return F
 def myGrad(x):
   # grad(f)
-  grad    = test.grad(x)
+  #grad    = test.grad(x)
+  gg =  test.gvec(x,['bnorm','ttlen'])
+  grad = gg[0] + lam*gg[1]
   # jac(min(constraint,0)**2)
   ccgrad  = 2*np.minimum(coil_coil_sep(x,**cckwargs) - cc_eps,0.0) * coil_coil_sep_grad(x,**cckwargs).T
   g_pen   = np.sum(ccgrad,axis=1)
