@@ -52,6 +52,7 @@ for infile in filelist:
   attrib['cvar99'] = indata['cvar99']
   attrib['max']  = indata['max']
   attrib['min']  = indata['min']
+  attrib['bnorm']  = indata['bnorm']
   data.append(attrib)
 
 df = pd.DataFrame.from_dict(data)
@@ -59,15 +60,15 @@ df = df.sort_values(by=['var95'])
 print(df)
 
 # Set up the matplotlib figure
+# f, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(7, 5), sharex=True)
 f, (ax1, ax2, ax3,ax4) = plt.subplots(4, 1, figsize=(7, 5), sharex=True)
-
 
 sns.barplot(x="run", y="var95", palette="rocket", data=df,ax=ax1)
 ax1.axhline(0, color="k", clip_on=False)
 ax1.set_ylabel("95%-Quantile")
-sns.barplot(x="run", y="var99", palette="rocket", data=df,ax=ax2)
+sns.barplot(x="run", y="bnorm", palette="rocket", data=df,ax=ax2)
 ax2.axhline(0, color="k", clip_on=False)
-ax2.set_ylabel("99%-Quantile")
+ax2.set_ylabel("$f_B$")
 sns.barplot(x="run", y="mean", palette="rocket", data=df,ax=ax3)
 ax3.axhline(0, color="k", clip_on=False)
 ax3.set_ylabel("Mean")
@@ -75,5 +76,6 @@ sns.barplot(x="run", y="cvar95", palette="rocket", data=df,ax=ax4)
 ax4.axhline(0, color="k", clip_on=False)
 ax4.set_ylabel("CVaR95")
 
+ax1.title.set_text(f"Objectives under {to_mm(plot_shift)}mm alignment and {to_mm(plot_nps)}mm fabrication errors")
 plt.show()
 

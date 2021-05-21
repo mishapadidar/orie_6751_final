@@ -34,7 +34,7 @@ focus.globals.iout = 0
 
 # save data directory
 data_dir = "./output/"
-n_evals  = 1000
+n_evals  = 2000
 max_shift = 0.002
 normal_perturbation_size = 0.002
 gp_lengthscale = 0.5
@@ -52,10 +52,10 @@ for infile in filelist:
   indata['sample_normal_perturbation_size'] = normal_perturbation_size
   indata['sample_gp_lengthscale'] = gp_lengthscale
 
-  # set the seed
+  # set the seed for mpi
   now     = datetime.now()
   seed    = int("%d%.2d%.2d%.2d%.2d"%(now.month,now.day,now.hour,now.minute,now.second))
-  np.random.seed(seed)
+  np.random.seed(seed) 
 
   # save filename
   base_name = infile.split("/")[-1]
@@ -112,10 +112,11 @@ for infile in filelist:
   med  = np.median(fX)
   var99 = np.percentile(fX,99)
   var95 = np.percentile(fX,95)
-  cvar95 = (1/.05)*np.mean(np.maximum(fX-var95,0.0))
-  cvar99 = (1/.01)*np.mean(np.maximum(fX-var99,0.0))
+  cvar95 = (1/.05)*np.mean(fX*(fX >=var95))
+  cvar99 = (1/.01)*np.mean(fX*(fX >=var99))
   mx   = np.max(fX)
   mn   = np.min(fX)
+  bn   = test.fvec(x0,['bnorm'])[0]
   
   
   if master:
@@ -132,6 +133,7 @@ for infile in filelist:
     d['cvar99']      = cvar99
     d['max']         = mx   
     d['min']         = mn   
+    d['bnorm']       = bn
 
     d.update(indata)
     d.update(get_input_settings(focus.globals))
