@@ -105,12 +105,34 @@ for infile in filelist:
   # compute the function values
   with multiprocessing.Pool(4) as pool:
     fX = np.array(pool.map(pool_bnorm, X))
+
+  # compute information
+  mean = np.mean(fX)
+  std  = np.std(fX)
+  med  = np.median(fX)
+  var99 = np.percentile(fX,99)
+  var95 = np.percentile(fX,95)
+  cvar95 = (1/.05)*np.mean(np.maximum(fX-var95,0.0))
+  cvar99 = (1/.01)*np.mean(np.maximum(fX-var99,0.0))
+  mx   = np.max(fX)
+  mn   = np.min(fX)
+  
   
   if master:
     # save the results
     d                = {}
     d['X_samples']   = X
     d['fX_samples']  = fX
+    d['mean']        = mean 
+    d['std']         = std  
+    d['med']         = med  
+    d['var99']       = var99
+    d['var95']       = var95    
+    d['cvar95']      = cvar95
+    d['cvar99']      = cvar99
+    d['max']         = mx   
+    d['min']         = mn   
+
     d.update(indata)
     d.update(get_input_settings(focus.globals))
     import os
