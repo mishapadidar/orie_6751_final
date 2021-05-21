@@ -18,11 +18,8 @@ plot_shift = 0.002
 to_mm = lambda x: int(1000*x)
 
 # generate a dataframe
-cols = ['fX','run']
 fX = []
 runs = []
-sample_shift = []
-sample_nps   = []
 
 problem_names = ['CVaR','Expected']
 for infile in filelist:
@@ -35,8 +32,6 @@ for infile in filelist:
   if indata['sample_max_shift'] != plot_shift or indata['sample_normal_perturbation_size'] != plot_nps:
     continue
 
-  sample_shift.append([indata['sample_max_shift']])
-  sample_nps.append(indata['sample_normal_perturbation_size'])
   fX.append(indata['fX_samples'])
   if 'max_shift' in indata.keys():
     label = problem_names[indata['problem_num']]\
@@ -46,7 +41,11 @@ for infile in filelist:
     label = str(indata['problem_num']) 
   runs.append(label)
 
-
+# sort the labels
+fX  = np.array(fX)
+idx = np.argsort(runs)
+runs.sort()
+fX = fX[idx].T
 
 fig = plt.figure(figsize=(12,8))
 ax = plt.axes()
